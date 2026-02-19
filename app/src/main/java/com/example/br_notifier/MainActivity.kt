@@ -13,11 +13,22 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlinx.coroutines.*
 import org.jsoup.Jsoup
+import java.util.Calendar
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import retrofit2.http.GET
+import retrofit2.http.Query
+import androidx.core.widget.doOnTextChanged
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import android.widget.AutoCompleteTextView
+import androidx.lifecycle.lifecycleScope
+import com.example.br_notifier.setupStationAutocomplete
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var editFrom: EditText
-    private lateinit var editTo: EditText
+    private lateinit var editFrom: AutoCompleteTextView
+    private lateinit var editTo: AutoCompleteTextView
     private lateinit var editDate: EditText
     private lateinit var editTime: EditText
     private lateinit var editReload: EditText
@@ -44,6 +55,16 @@ class MainActivity : AppCompatActivity() {
         editReload = findViewById(R.id.editReload)
         buttonStart = findViewById(R.id.buttonStart)
         textStatus = findViewById(R.id.textStatus)
+        setupStationAutocomplete(editFrom, lifecycleScope)
+        setupStationAutocomplete(editTo, lifecycleScope)
+
+        editDate.setOnClickListener {
+            showDatePicker()
+        }
+
+        editTime.setOnClickListener {
+            showTimePicker()
+        }
 
         buttonStart.setOnClickListener {
             startChecking()
@@ -120,5 +141,48 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         mainScope.cancel()
+    }
+
+    private fun showDatePicker() {
+        val calendar = Calendar.getInstance()
+
+        val datePicker = DatePickerDialog(
+            this,
+            { _, year, month, dayOfMonth ->
+                val formattedMonth = (month + 1).toString().padStart(2, '0')
+                val formattedDay = dayOfMonth.toString().padStart(2, '0')
+                editDate.setText("$year-$formattedMonth-$formattedDay")
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+
+        datePicker.show()
+    }
+
+    private fun showTimePicker() {
+        val calendar = Calendar.getInstance()
+
+        val timePicker = TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                val formattedHour = hour.toString().padStart(2, '0')
+                val formattedMinute = minute.toString().padStart(2, '0')
+                editTime.setText("$formattedHour:$formattedMinute")
+            },
+            calendar.get(Calendar.HOUR_OF_DAY),
+            calendar.get(Calendar.MINUTE),
+            true
+        )
+
+        timePicker.show()
+    }
+
+    private fun AutoCompleteTextView.textChanges() = callbackFlow {
+        val watcher = doOnTextChanged { text, _, _, _ ->
+            trySend(text ?: "")
+        }
+        awaitClose { removeTextChangedListener(watcher) }
     }
 }

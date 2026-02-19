@@ -20,22 +20,30 @@
             android:textStyle="bold"
             android:gravity="center"/>
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editFrom"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:clickable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Откуда"
-            android:layout_marginTop="16dp"/>
+            android:inputType="text"/>
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editTo"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:clickable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Куда"
-            android:layout_marginTop="12dp"/>
+            android:inputType="text"/>
 
         <EditText
             android:id="@+id/editDate"
+            android:focusable="false"
+            android:clickable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Дата (yyyy-mm-dd)"
@@ -43,6 +51,8 @@
 
         <EditText
             android:id="@+id/editTime"
+            android:focusable="false"
+            android:clickable="true"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="Время (hh:mm)"
