@@ -62,7 +62,7 @@
             android:id="@+id/editReload"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Интервал обновления (сек)"
+            android:hint="Можно не заполнять (сек)"
             android:inputType="number"
             android:layout_marginTop="12dp"/>
 

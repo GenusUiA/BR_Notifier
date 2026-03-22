@@ -14,6 +14,7 @@ import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Query
 
+
 // ------------------- DTO -------------------
 data class StationDto(
     val prefix: String,
@@ -56,6 +57,7 @@ fun setupStationAutocomplete(
     autoCompleteTextView: AutoCompleteTextView,
     scope: LifecycleCoroutineScope
 ) {
+    var isUserSelection = false
     autoCompleteTextView.threshold = 3
 
     autoCompleteTextView.addTextChangedListener(object : TextWatcher {
@@ -65,6 +67,11 @@ fun setupStationAutocomplete(
         override fun afterTextChanged(s: Editable?) {}
 
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            if (isUserSelection) {
+                isUserSelection = false
+                return
+            }
+
             val query = s.toString()
             if (query.length >= 3) {
                 job?.cancel()
@@ -74,7 +81,10 @@ fun setupStationAutocomplete(
                         val gson = Gson()
                         val type = object : TypeToken<List<StationDto>>() {}.type
                         val stations: List<StationDto> = gson.fromJson(json, type)
-                        val names = stations.map { it.label }
+
+                        // очищаем названия
+                        val names = stations.map { it.value }
+
 
                         withContext(Dispatchers.Main) {
                             val adapter = ArrayAdapter(
@@ -82,10 +92,25 @@ fun setupStationAutocomplete(
                                 android.R.layout.simple_dropdown_item_1line,
                                 names
                             )
+
                             autoCompleteTextView.setAdapter(adapter)
-                            adapter.notifyDataSetChanged()
+
+                            autoCompleteTextView.setOnItemClickListener { _, _, position, _ ->
+                                isUserSelection = true
+
+                                job?.cancel()   // ОТМЕНЯЕМ запрос
+
+                                val selected = names[position]
+
+                                autoCompleteTextView.setText(selected, false)
+
+                                autoCompleteTextView.dismissDropDown()
+                            }
+
+
                             autoCompleteTextView.showDropDown()
                         }
+
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }

@@ -16,6 +16,8 @@ import org.jsoup.Jsoup
 import java.util.Calendar
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.media.AudioManager
+import android.media.ToneGenerator
 import retrofit2.http.GET
 import retrofit2.http.Query
 import androidx.core.widget.doOnTextChanged
@@ -24,6 +26,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import android.widget.AutoCompleteTextView
 import androidx.lifecycle.lifecycleScope
 import com.example.br_notifier.setupStationAutocomplete
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.example.br_notifier.NotificationHelper
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,6 +55,18 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                1
+            )
+        }
+
         editFrom = findViewById(R.id.editFrom)
         editTo = findViewById(R.id.editTo)
         editDate = findViewById(R.id.editDate)
@@ -55,20 +74,31 @@ class MainActivity : AppCompatActivity() {
         editReload = findViewById(R.id.editReload)
         buttonStart = findViewById(R.id.buttonStart)
         textStatus = findViewById(R.id.textStatus)
+
         setupStationAutocomplete(editFrom, lifecycleScope)
         setupStationAutocomplete(editTo, lifecycleScope)
 
-        editDate.setOnClickListener {
-            showDatePicker()
+        // Делаем кнопку неактивной по умолчанию
+        buttonStart.isEnabled = false
+
+        // Функция для проверки всех обязательных полей
+        fun updateButtonState() {
+            buttonStart.isEnabled =
+                editFrom.text.isNotBlank() &&
+                        editTo.text.isNotBlank() &&
+                        editDate.text.isNotBlank() &&
+                        editTime.text.isNotBlank()
         }
 
-        editTime.setOnClickListener {
-            showTimePicker()
+        // Добавляем отслеживание изменений в полях
+        listOf(editFrom, editTo, editDate, editTime).forEach { editText ->
+            editText.doOnTextChanged { _, _, _, _ -> updateButtonState() }
         }
 
-        buttonStart.setOnClickListener {
-            startChecking()
-        }
+        editDate.setOnClickListener { showDatePicker() }
+        editTime.setOnClickListener { showTimePicker() }
+
+        buttonStart.setOnClickListener { startChecking() }
     }
 
     private fun startChecking() {
@@ -111,6 +141,10 @@ class MainActivity : AppCompatActivity() {
                         Handler(Looper.getMainLooper()).post {
                             textStatus.text = "Есть $seatsAvailable мест $date $departureTime $fromStation → $toStation"
                             playSound()
+                            NotificationHelper.showNotification(
+                                this@MainActivity,
+                                "Есть $seatsAvailable мест $fromStation → $toStation"
+                            )
                         }
                         break
                     }
@@ -131,12 +165,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun playSound() {
-        try {
-            val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val r = RingtoneManager.getRingtone(applicationContext, notification)
-            r.play()
-        } catch (_: Exception) { }
+        val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+        toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 300)
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
