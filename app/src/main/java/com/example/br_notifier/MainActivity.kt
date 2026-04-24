@@ -4,6 +4,7 @@ import android.media.RingtoneManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -40,9 +41,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editTime: EditText
     private lateinit var editReload: EditText
     private lateinit var buttonStart: Button
+    private lateinit var buttonStop: Button
     private lateinit var textStatus: TextView
 
     private val mainScope = CoroutineScope(Dispatchers.Main + Job())
+    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -73,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         editTime = findViewById(R.id.editTime)
         editReload = findViewById(R.id.editReload)
         buttonStart = findViewById(R.id.buttonStart)
+        buttonStop = findViewById(R.id.buttonStop)
         textStatus = findViewById(R.id.textStatus)
 
         setupStationAutocomplete(editFrom, lifecycleScope)
@@ -99,6 +103,7 @@ class MainActivity : AppCompatActivity() {
         editTime.setOnClickListener { showTimePicker() }
 
         buttonStart.setOnClickListener { startChecking() }
+        buttonStop.setOnClickListener { stopChecking() }
     }
 
     private fun startChecking() {
@@ -109,13 +114,28 @@ class MainActivity : AppCompatActivity() {
         val reloadSec = editReload.text.toString().toLongOrNull()?.coerceAtLeast(5L) ?: 5L
 
         textStatus.text = "Статус: проверка..."
+        buttonStart.visibility = View.GONE
+        buttonStop.visibility = View.VISIBLE
 
-        mainScope.launch {
-            while (isActive) {
-                checkTrains(from, to, date, targetTime)
-                delay(reloadSec * 1000)
+        searchJob?.cancel()
+        searchJob = mainScope.launch {
+            try {
+                while (isActive) {
+                    checkTrains(from, to, date, targetTime)
+                    delay(reloadSec * 1000)
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    buttonStart.visibility = View.VISIBLE
+                    buttonStop.visibility = View.GONE
+                }
             }
         }
+    }
+
+    private fun stopChecking() {
+        searchJob?.cancel()
+        textStatus.text = "Статус: остановлено"
     }
 
     private suspend fun checkTrains(from: String, to: String, date: String, targetTime: String) {
@@ -138,7 +158,7 @@ class MainActivity : AppCompatActivity() {
 
                     if (departureTime == targetTime && seatsAvailable > 0) {
                         found = true
-                        Handler(Looper.getMainLooper()).post {
+                        withContext(Dispatchers.Main) {
                             textStatus.text = "Есть $seatsAvailable мест $date $departureTime $fromStation → $toStation"
                             playSound()
                             NotificationHelper.showNotification(
@@ -151,13 +171,13 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 if (!found) {
-                    Handler(Looper.getMainLooper()).post {
+                    withContext(Dispatchers.Main) {
                         textStatus.text = "Нет мест на $targetTime"
                     }
                 }
 
             } catch (e: Exception) {
-                Handler(Looper.getMainLooper()).post {
+                withContext(Dispatchers.Main) {
                     textStatus.text = "Ошибка: ${e.message}"
                 }
             }
