@@ -82,10 +82,8 @@ class MainActivity : AppCompatActivity() {
         setupStationAutocomplete(editFrom, lifecycleScope)
         setupStationAutocomplete(editTo, lifecycleScope)
 
-        // Делаем кнопку неактивной по умолчанию
         buttonStart.isEnabled = false
 
-        // Функция для проверки всех обязательных полей
         fun updateButtonState() {
             buttonStart.isEnabled =
                 editFrom.text.isNotBlank() &&
@@ -94,7 +92,6 @@ class MainActivity : AppCompatActivity() {
                         editTime.text.isNotBlank()
         }
 
-        // Добавляем отслеживание изменений в полях
         listOf(editFrom, editTo, editDate, editTime).forEach { editText ->
             editText.doOnTextChanged { _, _, _, _ -> updateButtonState() }
         }

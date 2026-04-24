@@ -47,8 +47,7 @@ class MonitoringService : Service() {
             try {
                 val encodedFrom = URLEncoder.encode(from, "UTF-8")
                 val encodedTo = URLEncoder.encode(to, "UTF-8")
-                
-                // Формируем URL в точности как просил пользователь
+
                 val url = "https://pass.rw.by/ru/route/?from=$encodedFrom&from_esr=&to=$encodedTo&front_date=&date=$date"
                 
                 val doc = Jsoup.connect(url)
