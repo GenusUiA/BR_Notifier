@@ -32,6 +32,13 @@ import android.content.pm.PackageManager
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.br_notifier.NotificationHelper
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.os.PowerManager
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,17 +65,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                1
-            )
-        }
+        checkPermissions()
+        requestIgnoreBatteryOptimizations()
 
         editFrom = findViewById(R.id.editFrom)
         editTo = findViewById(R.id.editTo)
@@ -103,6 +101,29 @@ class MainActivity : AppCompatActivity() {
         buttonStop.setOnClickListener { stopChecking() }
     }
 
+    private fun checkPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+    }
+
+    private fun requestIgnoreBatteryOptimizations() {
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:$packageName")
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun isNetworkAvailable(): Boolean {
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
     private fun startChecking() {
         val from = editFrom.text.toString()
         val to = editTo.text.toString()
@@ -118,7 +139,14 @@ class MainActivity : AppCompatActivity() {
         searchJob = mainScope.launch {
             try {
                 while (isActive) {
-                    checkTrains(from, to, date, targetTime)
+                    if (isNetworkAvailable()) {
+                        checkTrains(from, to, date, targetTime)
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            textStatus.text = "Ошибка: потеряно интернет соединение"
+                            NotificationHelper.showNotification(this@MainActivity, "Потеряно интернет соединение")
+                        }
+                    }
                     delay(reloadSec * 1000)
                 }
             } finally {

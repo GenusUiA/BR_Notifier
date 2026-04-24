@@ -11,7 +11,7 @@ object NotificationHelper {
 
     private const val CHANNEL_ID = "train_channel"
 
-    fun showNotification(context: Context, message: String) {
+    fun showNotification(context: Context, message: String, notificationId: Int = 1) {
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -31,13 +31,13 @@ object NotificationHelper {
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Найдены свободные места")
+            .setContentTitle("BR_Notifier")
             .setContentText(message)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
 
-        notificationManager.notify(1, notification)
+        notificationManager.notify(notificationId, notification)
     }
 }
