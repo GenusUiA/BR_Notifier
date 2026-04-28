@@ -46,7 +46,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editTo: AutoCompleteTextView
     private lateinit var editDate: EditText
     private lateinit var editTime: EditText
-    private lateinit var editReload: EditText
     private lateinit var buttonStart: Button
     private lateinit var buttonStop: Button
     private lateinit var textStatus: TextView
@@ -72,7 +71,6 @@ class MainActivity : AppCompatActivity() {
         editTo = findViewById(R.id.editTo)
         editDate = findViewById(R.id.editDate)
         editTime = findViewById(R.id.editTime)
-        editReload = findViewById(R.id.editReload)
         buttonStart = findViewById(R.id.buttonStart)
         buttonStop = findViewById(R.id.buttonStop)
         textStatus = findViewById(R.id.textStatus)
@@ -129,7 +127,7 @@ class MainActivity : AppCompatActivity() {
         val to = editTo.text.toString()
         val date = editDate.text.toString()
         val targetTime = editTime.text.toString()
-        val reloadSec = editReload.text.toString().toLongOrNull()?.coerceAtLeast(5L) ?: 5L
+        val reloadSec = 5L
 
         textStatus.text = "Статус: проверка..."
         buttonStart.visibility = View.GONE
